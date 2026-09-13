@@ -27,17 +27,33 @@ let products = [
     // desserts
     { id: 16, name: "Tiramisu", categories: { category: "dessert", subcategory: "cake" }, rating: 9, isInStock: true, price: 140 }
 ];
+
 let cart = [];
 let cartTech = [];
-let promocodes = [];
-// 1
+let appliedDiscount = 0;
+
+let codes = [
+    { name: "mykola", discount: 0.15 },
+    { name: "kokos100500", discount: 0.25 },
+    { name: "mykola200", discount: 0.05 },
+];
+
+let tprice = {
+    totalprice: () => {
+        let sum = cartTech.reduce((acc, item) => acc + Number(item.price), 0);
+        return sum * (1 - appliedDiscount);
+    }
+};
+
+let cardInf = { number: "", expire: "", cvv: "" };
+
 function startMenu() {
     while (true) {
         let choise = +prompt(`1 - view menu
 2 - find dish/drink by name
 3 - add dish/drink into cart
 4 - view cart
-5 - checkout
+5 - add details of card
 6 - use promocode
 7 - make an order
 8 - clear cart
@@ -46,7 +62,7 @@ function startMenu() {
         if (choise === 0) {
             alert("Good luck! :)");
             break;
-        };
+        }
         switch (choise) {
             case 1:
                 alert("======== MENU ======== \n" + viewMenu());
@@ -65,74 +81,143 @@ function startMenu() {
                 break;
 
             case 5:
-                alert("That was 5!")
+                addDetailsOfCard();
                 break;
 
             case 6:
-                alert("That was 6!")
+                usePromo();
                 break;
 
             case 7:
-                alert("That was 7!")
-                break;
-            case 8:
-            clearCart();
+                makeAnOrder();
                 break;
 
-            default: alert("Error");
+            case 8:
+                clearCart();
                 break;
-        };
-    };
-};
-startMenu();
+
+            default: 
+                alert("Error");
+                break;
+        }
+    }
+}
+
+
 function viewMenu() {
     let array1 = [];
-    products.filter(details => {
-        array1.push(`id: ${details.id} == name: ${details.name} == rating: ${details.rating} == price: ${details.price} \n`);
+    products.forEach(details => {
+        let status = details.isInStock ? "" : " (Out of stock)";
+        array1.push(`id: ${details.id} = name: ${details.name} = rating: ${details.rating} = price: ${details.price}грн${status}\n`);
     });
-    return array1;
-};
+    return array1.join("");
+}
 
 function findDishByName(name) {
-    // products.forEach(product => product.name.toLowerCase);
     name = prompt("Type name of dish/drink");
+    if (!name) return;
+
     let filteredArray = [];
-    let isFound = products.filter(product => name.includes(product.name));
+    let isFound = products.filter(product => 
+        product.name.toLowerCase().includes(name.toLowerCase())
+    );
 
-    const result = isFound.map(product => {
-        filteredArray.push(`id: ${product.id} \n name: ${product.name} \n rating: ${product.rating}/10 \n price: ${product.price}`)
+    isFound.forEach(product => {
+        let status = product.isInStock ? "In stock" : "Out of stock";
+        filteredArray.push(`id: ${product.id} \n name: ${product.name} \n rating: ${product.rating}/10 \n price: ${product.price}грн \n status: ${status}`);
     });
-
 
     if (filteredArray.length === 0) {
         alert(`your dish is not found`);
     } else {
-        alert(filteredArray);
+        alert(filteredArray.join("\n\n"));
     }
-};
-
+}
 
 function addDishToCart() {
-    let productId = Number(prompt(`Type id of dish/drink\n\n${viewMenu()}`));
-    let productNumber = Number(prompt(`Type numner of your dish/drink`));
-    products.filter(product => {
-        if (productId === product.id) {
-            for (let i = 0; i < productNumber; i++) {
-                cart.push(`id: ${product.id} == name: ${product.name} == rating: ${product.rating} == price: ${Number(product.price)}`);
-                cartTech.push(product);
-            }
-            alert("added!");
-        }
-    });
-};
+    let inputId = prompt(`Type id of dish/drink\n\n${viewMenu()}`);
+    if (!inputId) return;
+    let productId = Number(inputId);
+
+    let product = products.find(p => p.id === productId);
+
+    if (!product) {
+        alert("Dish with this ID was not found!");
+        return;
+    }
+
+    if (!product.isInStock) {
+        alert("Sorry, this item is out of stock!");
+        return;
+    }
+
+    let inputNumber = prompt(`Type number of your dish/drink`);
+    if (!inputNumber) return;
+    let productNumber = Number(inputNumber);
+
+    for (let i = 0; i < productNumber; i++) {
+        cart.push(`id: ${product.id} = name: ${product.name} = rating: ${product.rating} = price: ${Number(product.price)}грн`);
+        cartTech.push(product);
+    }
+    alert("added!");
+}
 
 function viewCart() {
-    let totalprice = cartTech.reduce((acc, item) => acc + Number(item.price), 0);
-    return alert(`${cart.join('\n')}\n\n===== total price: ${totalprice} =====`);
-};
+    if (cart.length === 0) {
+        return alert("Your cart is empty!");
+    }
+    return alert(`${cart.join('\n')}\n\n===== total price: ${tprice.totalprice()}грн =====`);
+}
 
 function clearCart() {
     cart.splice(0, cart.length);
     cartTech.splice(0, cartTech.length);
+    appliedDiscount = 0;
     alert("Cart was succesfully cleared!");
-};
+}
+
+function usePromo(code1) {
+    code1 = prompt("Use your promocode!");
+    if (!code1) return;
+
+    let found = codes.find(code => code.name === code1);
+    
+    if (found) {
+        appliedDiscount = found.discount;
+        alert(`yay! Discount ${found.discount * 100}% applied`);
+    } else {
+        alert("nah");
+    }
+}
+
+function addDetailsOfCard() {
+    cardInf.number = prompt("Type number of your card");
+    cardInf.expire = prompt("Type date of expire of your card");
+    cardInf.cvv = prompt("Type cvv of your card");
+
+    alert(`Number: ${cardInf.number} \n Date of expire: ${cardInf.expire} \n CVV: ${cardInf.cvv} \n З вашої карти було снято всі гроші людиної Mykola200`);
+}
+
+function viewCard() {
+    return `Number: ${cardInf.number} \n Date of expire: ${cardInf.expire} \n CVV: ${cardInf.cvv}`;
+}
+
+function checkout() {
+    alert(`${viewCard()} \n\nTotal to pay: ${tprice.totalprice()}грн`);
+}
+
+function makeAnOrder() {
+    if (cart.length === 0) {
+        alert("Your cart is empty!");
+        return;
+    }
+    if (!cardInf.number || !cardInf.expire || !cardInf.cvv) {
+        alert("Please add card details first (option 5)!");
+        return;
+    }
+    checkout();
+    alert("Order successful! Thank you!");
+    clearCart();
+}
+
+startMenu();
